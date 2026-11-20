@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 from ..core.components import ComponentCategory
 from ..db.repository import Repository
 from ..utils.i18n import t
+import pyqtgraph as pg
 
 
 class InsightsView(QWidget):
@@ -59,6 +60,13 @@ class InsightsView(QWidget):
         btn_row.addStretch()
         layout.addLayout(btn_row)
 
+        self.chart = pg.PlotWidget()
+        self.chart.setBackground("#11141b")
+        self.chart.setTitle("Session energy (kWh)", color="#8a8f9e", size="10pt")
+        self.chart.setLabel("left", "kWh", color="#8a8f9e")
+        self.chart.setLabel("bottom", "Session", color="#8a8f9e")
+        layout.addWidget(self.chart, stretch=1)
+
         self.refresh()
 
     def refresh(self) -> None:
@@ -99,6 +107,15 @@ class InsightsView(QWidget):
             top_lines = ["Top processes: n/a"]
         # CO2
         co2 = total_kwh * 0.4
+        # session energy chart
+        sessions_sorted = list(reversed(sessions))
+        vals = [s.energy_kwh or 0.0 for s in sessions_sorted]
+        self.chart.clear()
+        if vals:
+            bg = pg.BarGraphItem(x=range(len(vals)), height=vals, width=0.6, brushes=["#2563eb"])
+            self.chart.addItem(bg)
+            self.chart.setYRange(0, max(vals + [0.01]) * 1.2)
+
         # recommendations
         lines = []
         reg = self.main.registry
@@ -120,6 +137,13 @@ class InsightsView(QWidget):
 
     def _save_threshold(self) -> None:
         self.main.repo.set_setting("threshold", str(self.threshold_spin.value()))
+        self.chart = pg.PlotWidget()
+        self.chart.setBackground("#11141b")
+        self.chart.setTitle("Session energy (kWh)", color="#8a8f9e", size="10pt")
+        self.chart.setLabel("left", "kWh", color="#8a8f9e")
+        self.chart.setLabel("bottom", "Session", color="#8a8f9e")
+        layout.addWidget(self.chart, stretch=1)
+
         self.refresh()
 
     def _export_csv(self) -> None:

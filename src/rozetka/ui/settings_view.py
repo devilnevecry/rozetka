@@ -48,6 +48,7 @@ class SettingsView(QWidget):
         idx = self.lang_combo.findData(get_language())
         if idx >= 0:
             self.lang_combo.setCurrentIndex(idx)
+        self.lang_combo.currentIndexChanged.connect(self._on_language_changed)
         lang_row.addWidget(self.lang_combo)
         lang_row.addStretch()
         layout.addLayout(lang_row)
@@ -61,6 +62,13 @@ class SettingsView(QWidget):
         code = self.lang_combo.currentData()
         if code:
             set_language(code)
+            self.main.repo.set_setting("language", code)
+            self.main.rebuild_ui()
+
+    def _on_language_changed(self, _index: int) -> None:
+        code = self.lang_combo.currentData()
+        if code and code != __import__('rozetka.utils.i18n', fromlist=['get_language']).get_language():
+            __import__('rozetka.utils.i18n', fromlist=['set_language']).set_language(code)
             self.main.repo.set_setting("language", code)
             self.main.rebuild_ui()
 

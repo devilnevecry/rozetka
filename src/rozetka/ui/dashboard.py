@@ -83,6 +83,7 @@ class DashboardView(QWidget):
 
         # Power chart
         self.plot = pg.PlotWidget()
+        self.plot.setAntialiasing(True)
         self.plot.setBackground("#11141b")
         self.plot.setTitle(t("chart_power"), color="#8a8f9e", size="10pt")
         self.plot.setLabel("left", "Value", color="#8a8f9e")
@@ -96,6 +97,7 @@ class DashboardView(QWidget):
 
         # Component bar chart
         self.bar_plot = pg.PlotWidget()
+        self.bar_plot.setAntialiasing(True)
         self.bar_plot.setBackground("#11141b")
         self.bar_plot.setTitle(t("pie_title"), color="#8a8f9e", size="10pt")
         self.bar_plot.setLabel("left", "Watts", color="#8a8f9e")
@@ -181,13 +183,27 @@ class DashboardView(QWidget):
         self.curve_power.setData(list(self._power_history))
         self.curve_cpu.setData(list(self._cpu_history))
         self.curve_gpu.setData(list(self._gpu_history))
+        # fill under power curve
+        if not hasattr(self, '_fill'):
+            self._fill = pg.FillBetweenItem(self.curve_power, pg.PlotDataItem([0]*len(self._power_history)), brush=pg.mkBrush(37,99,235,60))
+            self.plot.addItem(self._fill)
+        try:
+            self._fill.setCurves(self.curve_power, pg.PlotDataItem(list(range(len(self._power_history))), [0]*len(self._power_history)))
+        except Exception:
+            pass
         names = [c.name[:14] for c in reg.components]
         vals = [c.current_watts for c in reg.components]
-        bg = pg.BarGraphItem(x=range(len(names)), height=vals, width=0.6, brushes="#2563eb")
+        bg = pg.BarGraphItem(x=range(len(names)), height=vals, width=0.6, brushes=["#2563eb"])
         self.bar_plot.clear()
         self.bar_plot.addItem(bg)
+        # value labels
+        for i, v in enumerate(vals):
+            txt = pg.TextItem(f"{v:.0f}", color="#8a8f9e", anchor=(0.5, 1.2))
+            txt.setPos(i, v)
+            self.bar_plot.addItem(txt)
         ax = self.bar_plot.getAxis("bottom")
         ax.setTicks([[(i, n) for i, n in enumerate(names)]])
+        self.bar_plot.setYRange(0, max(vals + [1]) * 1.2)
 
     def retranslate(self) -> None:
         metric_keys = ["metric_cpu_pct", "metric_cpu_temp", "metric_cpu_freq", "metric_ram_pct",
