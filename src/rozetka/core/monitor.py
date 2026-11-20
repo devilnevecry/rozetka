@@ -1,6 +1,9 @@
 """System resource monitoring using psutil (+ optional GPU backends)."""
 from __future__ import annotations
 
+import warnings
+warnings.filterwarnings('ignore', category=FutureWarning)
+
 import threading
 import time
 from dataclasses import dataclass, field
