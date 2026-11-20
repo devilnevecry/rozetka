@@ -170,6 +170,26 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
 
+    def rebuild_ui(self) -> None:
+        tabs = self.centralWidget()
+        current = tabs.currentIndex() if tabs else 0
+        # recreate views
+        self.dashboard = DashboardView(self)
+        self.components_view = ComponentsView(self)
+        self.history_view = HistoryView(self)
+        self.settings_view = SettingsView(self)
+        self.insights_view = InsightsView(self)
+        # rebuild tab widget
+        new_tabs = QTabWidget()
+        new_tabs.addTab(self.dashboard, "\U0001f4ca  " + t("tab_dashboard"))
+        new_tabs.addTab(self.components_view, "\U0001f527  " + t("tab_components"))
+        new_tabs.addTab(self.history_view, "\U0001f4dc  " + t("tab_history"))
+        new_tabs.addTab(self.settings_view, "\u2699\ufe0f  " + t("tab_settings"))
+        new_tabs.addTab(self.insights_view, "\U0001f4a1  " + t("tab_insights"))
+        new_tabs.setCurrentIndex(current)
+        self.setCentralWidget(new_tabs)
+        self.retranslate()
+
     def retranslate(self) -> None:
         self.setWindowTitle(t("app_title"))
         tabs = self.centralWidget()

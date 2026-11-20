@@ -62,7 +62,7 @@ class SettingsView(QWidget):
         if code:
             set_language(code)
             self.main.repo.set_setting("language", code)
-            self.main.retranslate()
+            self.main.rebuild_ui()
 
     def retranslate(self) -> None:
         self.lbl_tariff.setText(t("lbl_tariff"))
