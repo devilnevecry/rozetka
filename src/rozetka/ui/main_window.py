@@ -66,8 +66,6 @@ class MainWindow(QMainWindow):
 
         self.tracker = SessionTracker()
         self.monitor = SystemMonitor(interval=1.0)
-        self.monitor.subscribe(self._on_snapshot)
-        self.monitor.start()
 
         self._last_snapshot = None
         self._last_power_watts = 0.0
@@ -116,7 +114,7 @@ class MainWindow(QMainWindow):
 
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
-        self._timer.timeout.connect(self._tick)
+        self._timer.timeout.connect(self._collect_tick)
         self._timer.start()
 
     def _on_snapshot(self, snap) -> None:
@@ -128,6 +126,15 @@ class MainWindow(QMainWindow):
             self.dashboard.update_snapshot(snap, self._last_power_watts, self.registry)
         except Exception:
             pass
+
+    def _collect_tick(self) -> None:
+        try:
+            snap = self.monitor.collect()
+            self._on_snapshot(snap)
+        except Exception as e:
+            import sys
+            print('collect error:', e, flush=True)
+        self._tick()
 
     def _tick(self) -> None:
         now = time.time()
@@ -192,6 +199,5 @@ class MainWindow(QMainWindow):
                     )
         except Exception:
             pass
-        self.monitor.stop()
         self.db_session.close()
         super().closeEvent(event)

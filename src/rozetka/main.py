@@ -23,7 +23,9 @@ def main() -> int:
     if icon_path.exists():
         app.setWindowIcon(QIcon(str(icon_path)))
     window = MainWindow()
-    window.show()
+    window.showNormal()
+    window.activateWindow()
+    window.raise_()
     return app.exec()
 
 
