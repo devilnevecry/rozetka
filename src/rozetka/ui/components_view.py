@@ -22,6 +22,8 @@ class ComponentsView(QWidget):
         super().__init__()
         self.main = main
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels([t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
@@ -55,3 +57,7 @@ class ComponentsView(QWidget):
                 c.tdp_watts = spin.value()
                 self.main.repo.upsert_component(c.name, c.category.value, c.tdp_watts, c.idle_watts)
         self.refresh(reg)
+
+    def retranslate(self) -> None:
+        self.table.setHorizontalHeaderLabels([t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current")])
+        self.save_btn.setText(t("btn_save_tdp"))

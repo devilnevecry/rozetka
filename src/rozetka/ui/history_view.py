@@ -20,6 +20,8 @@ class HistoryView(QWidget):
         super().__init__()
         self.main = main
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
         totals = QHBoxLayout()
         self.total_cost_lbl = QLabel(t("total_cost", v=0.0, cur=""))
         self.total_kwh_lbl = QLabel(t("total_kwh", v=0.0))
@@ -52,3 +54,6 @@ class HistoryView(QWidget):
             self.table.setItem(i, 5, QTableWidgetItem(f"{r.cost:.4f}"))
         self.total_cost_lbl.setText(t("total_cost", v=repo.total_cost(), cur=self.main.tariff.currency))
         self.total_kwh_lbl.setText(t("total_kwh", v=repo.total_kwh()))
+
+    def retranslate(self) -> None:
+        self.table.setHorizontalHeaderLabels([t("col_id"), t("col_start"), t("col_end"), t("col_boot"), t("col_kwh"), t("col_cost")])

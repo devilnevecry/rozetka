@@ -28,6 +28,8 @@ class DashboardView(QWidget):
         self._cpu_history = deque(maxlen=180)
         self._gpu_history = deque(maxlen=180)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
 
         # Hero power card
         hero = QGroupBox("")
@@ -49,6 +51,7 @@ class DashboardView(QWidget):
 
         # Progress bars for CPU/RAM/GPU
         pb_row = QHBoxLayout()
+        pb_row.setSpacing(8)
         for key, color in [("cpu", "#4a6cf7"), ("ram", "#51cf66"), ("gpu", "#ff6b6b")]:
             box = QGroupBox(key.upper())
             v = QVBoxLayout(box)
@@ -65,6 +68,8 @@ class DashboardView(QWidget):
 
         # Metric cards grid
         grid = QGridLayout()
+        grid.setContentsMargins(0, 0, 0, 0)
+        grid.setSpacing(8)
         self.labels = {}
         self.boxes = {}
         metric_keys = ["metric_cpu_pct", "metric_cpu_temp", "metric_cpu_freq", "metric_ram_pct",

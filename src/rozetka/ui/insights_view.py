@@ -22,6 +22,8 @@ class InsightsView(QWidget):
         super().__init__()
         self.main = main
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
 
         # threshold alert
         row = QHBoxLayout()
@@ -140,4 +142,4 @@ class InsightsView(QWidget):
             QMessageBox.warning(self, "Export", str(e))
 
     def retranslate(self) -> None:
-        pass
+        self.threshold_spin.setToolTip(t("threshold"))

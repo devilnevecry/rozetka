@@ -20,6 +20,8 @@ class SettingsView(QWidget):
         super().__init__()
         self.main = main
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
         row = QHBoxLayout()
         self.lbl_tariff = QLabel(t("lbl_tariff"))
         row.addWidget(self.lbl_tariff)
