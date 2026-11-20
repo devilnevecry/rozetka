@@ -1,0 +1,22 @@
+[project]
+name = "rozetka"
+version = "0.1.0"
+description = "Cross-platform PC power consumption and resource usage tracker with cost accounting."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "rozetka contributors" }]
+
+[project.scripts]
+rozetka = "rozetka.main:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

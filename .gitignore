@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Database / user data
+*.db
+*.sqlite
+*.sqlite3
+data/
+config.local.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Qt
+*.qmlc
+*.jsc
+
+# Logs
+*.log
