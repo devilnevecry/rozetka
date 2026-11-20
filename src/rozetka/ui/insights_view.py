@@ -75,6 +75,28 @@ class InsightsView(QWidget):
         monthly_cost = monthly_kwh * self.main.tariff.price_per_kwh
         self.forecast_lbl.setText(t("monthly_forecast") + f": {monthly_cost:.2f} {self.main.tariff.currency} ({monthly_kwh:.1f} kWh)")
         self.sessions_lbl.setText(t("sessions_count", n=n) + f" | {t('total_kwh', v=total_kwh)} | {t('total_cost', v=total_cost, cur=self.main.tariff.currency)}")
+        # battery
+        try:
+            batt = __import__("psutil").sensors_battery()
+            if batt is not None:
+                lines_battery = f"Battery: {batt.percent:.0f}% ({'charging' if batt.power_plugged else 'discharging'})"
+            else:
+                lines_battery = "Battery: n/a (desktop)"
+        except Exception:
+            lines_battery = "Battery: n/a"
+        # top processes
+        try:
+            import psutil
+            procs = sorted(psutil.process_iter(['pid','name','cpu_percent','memory_percent']),
+                           key=lambda x: x.info.get('cpu_percent') or 0, reverse=True)[:5]
+            top_lines = ["Top processes by CPU:"]
+            for pr in procs:
+                info = pr.info
+                top_lines.append(f"  {info.get('name','?')} (PID {info.get('pid')}) - CPU {info.get('cpu_percent',0):.1f}%  RAM {info.get('memory_percent',0):.1f}%")
+        except Exception:
+            top_lines = ["Top processes: n/a"]
+        # CO2
+        co2 = total_kwh * 0.4
         # recommendations
         lines = []
         reg = self.main.registry
@@ -91,7 +113,8 @@ class InsightsView(QWidget):
         thr = float(self.main.repo.get_setting("threshold", "300") or 300)
         if self.main._last_power_watts > thr:
             lines.insert(0, f"! Current power {self.main._last_power_watts:.0f} W exceeds threshold {thr:.0f} W.")
-        self.reco_text.setPlainText("\n".join(lines))
+        extra = [lines_battery, "", "CO2 estimate: {:.2f} kg".format(co2), ""] + top_lines + [""]
+        self.reco_text.setPlainText("\n".join(extra + lines))
 
     def _save_threshold(self) -> None:
         self.main.repo.set_setting("threshold", str(self.threshold_spin.value()))

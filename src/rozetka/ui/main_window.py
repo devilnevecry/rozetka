@@ -5,6 +5,8 @@ import time
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QSystemTrayIcon,
+    QMenu,
     QMainWindow,
     QStatusBar,
     QTabWidget,
@@ -16,7 +18,7 @@ from ..core.power import Tariff, total_power_watts, update_registry_from_snapsho
 from ..core.tracker import SessionTracker
 from ..utils.i18n import set_language, t
 from ..utils.styles import DARK_QSS
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QAction, QIcon
 from ..db.models import Base, SessionRecord, make_engine, make_session_factory
 from ..db.repository import Repository
 from ..utils.config import db_path
@@ -82,16 +84,35 @@ class MainWindow(QMainWindow):
         self.history_view = HistoryView(self)
         self.settings_view = SettingsView(self)
         self.insights_view = InsightsView(self)
-        tabs.addTab(self.dashboard, t("tab_dashboard"))
-        tabs.addTab(self.components_view, t("tab_components"))
-        tabs.addTab(self.history_view, t("tab_history"))
-        tabs.addTab(self.settings_view, t("tab_settings"))
-        tabs.addTab(self.insights_view, t("tab_insights"))
+        tabs.addTab(self.dashboard, "📊  " + t("tab_dashboard"))
+        tabs.addTab(self.components_view, "🔧  " + t("tab_components"))
+        tabs.addTab(self.history_view, "📜  " + t("tab_history"))
+        tabs.addTab(self.settings_view, "⚙️  " + t("tab_settings"))
+        tabs.addTab(self.insights_view, "💡  " + t("tab_insights"))
         self.setCentralWidget(tabs)
 
         self.status = QStatusBar()
         self.setStatusBar(self.status)
         self.status.showMessage(t("status_running"))
+
+        # system tray
+        self.tray = QSystemTrayIcon(self)
+        icon_path = __import__('pathlib').Path(__file__).resolve().parents[3] / "resources" / "icon.ico"
+        if icon_path.exists():
+            self.tray.setIcon(QIcon(str(icon_path)))
+        tray_menu = QMenu()
+        show_action = QAction("Show", self)
+        show_action.triggered.connect(self.show)
+        hide_action = QAction("Hide", self)
+        hide_action.triggered.connect(self.hide)
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self.close)
+        tray_menu.addAction(show_action)
+        tray_menu.addAction(hide_action)
+        tray_menu.addSeparator()
+        tray_menu.addAction(quit_action)
+        self.tray.setContextMenu(tray_menu)
+        self.tray.show()
 
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
@@ -137,15 +158,19 @@ class MainWindow(QMainWindow):
         except Exception:
             pass
         self.status.showMessage(msg)
+        try:
+            self.tray.setToolTip(f"Rozetka - {self._last_power_watts:.0f} W")
+        except Exception:
+            pass
 
     def retranslate(self) -> None:
         self.setWindowTitle(t("app_title"))
         tabs = self.centralWidget()
-        tabs.setTabText(0, t("tab_dashboard"))
-        tabs.setTabText(1, t("tab_components"))
-        tabs.setTabText(2, t("tab_history"))
-        tabs.setTabText(3, t("tab_settings"))
-        tabs.setTabText(4, t("tab_insights"))
+        tabs.setTabText(0, "📊  " + t("tab_dashboard"))
+        tabs.setTabText(1, "🔧  " + t("tab_components"))
+        tabs.setTabText(2, "📜  " + t("tab_history"))
+        tabs.setTabText(3, "⚙️  " + t("tab_settings"))
+        tabs.setTabText(4, "💡  " + t("tab_insights"))
         self.dashboard.retranslate()
         self.components_view.retranslate()
         self.history_view.retranslate()

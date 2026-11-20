@@ -1,4 +1,4 @@
-"""Settings view: tariff, currency."""
+"""Settings view: tariff, currency, language."""
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
 from ..utils.i18n import LANGUAGES, get_language, set_language, t
 
 
@@ -20,16 +21,25 @@ class SettingsView(QWidget):
         self.main = main
         layout = QVBoxLayout(self)
         row = QHBoxLayout()
-        row.addWidget(QLabel(t("lbl_tariff")))
+        self.lbl_tariff = QLabel(t("lbl_tariff"))
+        row.addWidget(self.lbl_tariff)
         self.tariff_spin = QDoubleSpinBox()
         self.tariff_spin.setRange(0, 10000)
         self.tariff_spin.setValue(main.tariff.price_per_kwh)
         row.addWidget(self.tariff_spin)
-        row.addWidget(QLabel(t("lbl_currency")))
+        self.lbl_currency = QLabel(t("lbl_currency"))
+        row.addWidget(self.lbl_currency)
         self.currency_edit = QLineEdit(main.tariff.currency)
         row.addWidget(self.currency_edit)
+        save = QPushButton(t("btn_save"))
+        save.clicked.connect(self._save)
+        row.addWidget(save)
+        row.addStretch()
+        layout.addLayout(row)
+
         lang_row = QHBoxLayout()
-        lang_row.addWidget(QLabel(t("lbl_language")))
+        self.lbl_language = QLabel(t("lbl_language"))
+        lang_row.addWidget(self.lbl_language)
         self.lang_combo = QComboBox()
         for code, name in LANGUAGES.items():
             self.lang_combo.addItem(name, code)
@@ -39,11 +49,6 @@ class SettingsView(QWidget):
         lang_row.addWidget(self.lang_combo)
         lang_row.addStretch()
         layout.addLayout(lang_row)
-        save = QPushButton(t("btn_save"))
-        save.clicked.connect(self._save)
-        row.addWidget(save)
-        row.addStretch()
-        layout.addLayout(row)
         layout.addStretch()
 
     def _save(self) -> None:
@@ -58,4 +63,6 @@ class SettingsView(QWidget):
             self.main.retranslate()
 
     def retranslate(self) -> None:
-        pass
+        self.lbl_tariff.setText(t("lbl_tariff"))
+        self.lbl_currency.setText(t("lbl_currency"))
+        self.lbl_language.setText(t("lbl_language"))
