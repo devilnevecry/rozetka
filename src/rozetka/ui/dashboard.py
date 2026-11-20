@@ -31,7 +31,6 @@ class DashboardView(QWidget):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        # Hero row: 4 large metric cards
         hero = QHBoxLayout()
         hero.setSpacing(12)
         self.hero_power = self._hero_card("Power", "0 W", "#2563eb")
@@ -42,7 +41,6 @@ class DashboardView(QWidget):
             hero.addWidget(c)
         layout.addLayout(hero)
 
-        # Progress bars
         pb = QHBoxLayout()
         pb.setSpacing(12)
         self.cpu_bar = self._progress_card("CPU", "#16a34a")
@@ -52,7 +50,6 @@ class DashboardView(QWidget):
             pb.addWidget(c[0])
         layout.addLayout(pb)
 
-        # Metric cards grid
         grid = QGridLayout()
         grid.setSpacing(8)
         self.labels = {}
@@ -81,9 +78,7 @@ class DashboardView(QWidget):
                 row += 1
         layout.addLayout(grid)
 
-        # Power chart
         self.plot = pg.PlotWidget()
-        self.plot.setAntialiasing(True)
         self.plot.setBackground("#11141b")
         self.plot.setTitle(t("chart_power"), color="#8a8f9e", size="10pt")
         self.plot.setLabel("left", "Value", color="#8a8f9e")
@@ -95,9 +90,7 @@ class DashboardView(QWidget):
         self.curve_gpu = self.plot.plot(pen=pg.mkPen("#dc2626", width=1.5), name="GPU %")
         layout.addWidget(self.plot, stretch=2)
 
-        # Component bar chart
         self.bar_plot = pg.PlotWidget()
-        self.bar_plot.setAntialiasing(True)
         self.bar_plot.setBackground("#11141b")
         self.bar_plot.setTitle(t("pie_title"), color="#8a8f9e", size="10pt")
         self.bar_plot.setLabel("left", "Watts", color="#8a8f9e")
@@ -168,7 +161,6 @@ class DashboardView(QWidget):
         gpu_pct = (snap.gpus[0].load * 100) if snap.gpus else 0.0
         self.hero_gpu_lbl.setText(f"{gpu_pct:.0f}%")
 
-        # progress bars: cpu_bar is tuple (box, bar, lbl)
         self.cpu_bar[1].setValue(int(snap.cpu.percent))
         self.cpu_bar[2].setText(f"{snap.cpu.percent:.0f}%")
         self.ram_bar[1].setValue(int(snap.memory.percent))
@@ -183,27 +175,14 @@ class DashboardView(QWidget):
         self.curve_power.setData(list(self._power_history))
         self.curve_cpu.setData(list(self._cpu_history))
         self.curve_gpu.setData(list(self._gpu_history))
-        # fill under power curve
-        if not hasattr(self, '_fill'):
-            self._fill = pg.FillBetweenItem(self.curve_power, pg.PlotDataItem([0]*len(self._power_history)), brush=pg.mkBrush(37,99,235,60))
-            self.plot.addItem(self._fill)
-        try:
-            self._fill.setCurves(self.curve_power, pg.PlotDataItem(list(range(len(self._power_history))), [0]*len(self._power_history)))
-        except Exception:
-            pass
+        # bar chart
         names = [c.name[:14] for c in reg.components]
         vals = [c.current_watts for c in reg.components]
-        bg = pg.BarGraphItem(x=range(len(names)), height=vals, width=0.6, brushes=["#2563eb"])
+        bg = pg.BarGraphItem(x=range(len(names)), height=vals, width=0.6, brushes=["#2563eb" for _ in range(len(names))])
         self.bar_plot.clear()
         self.bar_plot.addItem(bg)
-        # value labels
-        for i, v in enumerate(vals):
-            txt = pg.TextItem(f"{v:.0f}", color="#8a8f9e", anchor=(0.5, 1.2))
-            txt.setPos(i, v)
-            self.bar_plot.addItem(txt)
         ax = self.bar_plot.getAxis("bottom")
         ax.setTicks([[(i, n) for i, n in enumerate(names)]])
-        self.bar_plot.setYRange(0, max(vals + [1]) * 1.2)
 
     def retranslate(self) -> None:
         metric_keys = ["metric_cpu_pct", "metric_cpu_temp", "metric_cpu_freq", "metric_ram_pct",

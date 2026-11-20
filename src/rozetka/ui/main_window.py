@@ -124,16 +124,16 @@ class MainWindow(QMainWindow):
         self.tracker.record(self._last_power_watts)
         try:
             self.dashboard.update_snapshot(snap, self._last_power_watts, self.registry)
-        except Exception:
-            pass
+        except Exception as e:
+            import traceback; traceback.print_exc()
 
     def _collect_tick(self) -> None:
         try:
             snap = self.monitor.collect()
             self._on_snapshot(snap)
         except Exception as e:
-            import sys
-            print('collect error:', e, flush=True)
+            import traceback
+            traceback.print_exc()
         self._tick()
 
     def _tick(self) -> None:

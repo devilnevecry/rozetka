@@ -112,7 +112,7 @@ class InsightsView(QWidget):
         vals = [s.energy_kwh or 0.0 for s in sessions_sorted]
         self.chart.clear()
         if vals:
-            bg = pg.BarGraphItem(x=range(len(vals)), height=vals, width=0.6, brushes=["#2563eb"])
+            bg = pg.BarGraphItem(x=range(len(vals)), height=vals, width=0.6, brushes=["#2563eb" for _ in vals])
             self.chart.addItem(bg)
             self.chart.setYRange(0, max(vals + [0.01]) * 1.2)
 

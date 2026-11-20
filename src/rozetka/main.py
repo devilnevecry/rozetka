@@ -18,6 +18,7 @@ def main() -> int:
     except Exception:
         pass
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
     app.setApplicationName("Rozetka")
     icon_path = Path(__file__).resolve().parents[2] / "resources" / "icon.ico"
     if icon_path.exists():
