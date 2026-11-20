@@ -1,13 +1,19 @@
-"""Dashboard view with live metrics."""
+
+"""Dashboard view with live metrics and power chart."""
 from __future__ import annotations
 
+from collections import deque
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
+    QHBoxLayout,
     QLabel,
     QVBoxLayout,
     QWidget,
 )
+import pyqtgraph as pg
 
 from ..core.components import ComponentRegistry
 from ..core.monitor import SystemSnapshot
@@ -17,7 +23,9 @@ class DashboardView(QWidget):
     def __init__(self, main) -> None:
         super().__init__()
         self.main = main
+        self._power_history = deque(maxlen=120)
         layout = QVBoxLayout(self)
+
         grid = QGridLayout()
         self.labels = {}
         metrics = ["CPU %", "CPU Temp", "CPU Freq", "RAM %", "RAM Used", "Disk %",
@@ -28,7 +36,7 @@ class DashboardView(QWidget):
         for m in metrics:
             box = QGroupBox(m)
             lbl = QLabel("0")
-            lbl.setAlignment(__import__("PySide6.QtCore", fromlist=["Qt"]).Qt.AlignCenter)
+            lbl.setAlignment(Qt.AlignCenter)
             v = QVBoxLayout()
             v.addWidget(lbl)
             box.setLayout(v)
@@ -39,8 +47,18 @@ class DashboardView(QWidget):
                 col = 0
                 row += 1
         layout.addLayout(grid)
+
         self.power_label = QLabel("Power: 0 W")
         layout.addWidget(self.power_label)
+
+        # chart
+        self.plot = pg.PlotWidget()
+        self.plot.setBackground("w")
+        self.plot.setTitle("Power (W) over time")
+        self.plot.setLabel("left", "Watts")
+        self.plot.setLabel("bottom", "Samples")
+        self.curve = self.plot.plot(pen=pg.mkPen("b", width=2))
+        layout.addWidget(self.plot)
 
     def update_snapshot(self, snap: SystemSnapshot, power_w: float, reg: ComponentRegistry) -> None:
         self.labels["CPU %"].setText(f"{snap.cpu.percent:.1f}")
@@ -61,7 +79,6 @@ class DashboardView(QWidget):
             self.labels["GPU Load"].setText("n/a")
             self.labels["GPU Temp"].setText("n/a")
         self.labels["Power (W)"].setText(f"{power_w:.1f}")
-        # session cost estimate
         try:
             sess = self.main.tracker.current
             if sess is not None:
@@ -71,3 +88,5 @@ class DashboardView(QWidget):
         except Exception:
             pass
         self.power_label.setText(f"Power: {power_w:.1f} W  |  Total TDP: {reg.total_tdp():.0f} W")
+        self._power_history.append(power_w)
+        self.curve.setData(list(self._power_history))

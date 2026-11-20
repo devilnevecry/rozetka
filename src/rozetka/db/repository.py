@@ -1,7 +1,7 @@
 """Data access layer."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ class Repository:
 
     # sessions
     def create_session(self, is_boot: bool = False) -> SessionRecord:
-        rec = SessionRecord(start_ts=datetime.utcnow(), is_boot=1 if is_boot else 0)
+        rec = SessionRecord(start_ts=datetime.now(timezone.utc).replace(tzinfo=None), is_boot=1 if is_boot else 0)
         self.session.add(rec)
         self.session.commit()
         self.session.refresh(rec)
@@ -23,7 +23,7 @@ class Repository:
 
     def close_session(self, rec: SessionRecord, energy_kwh: float, cost: float,
                       avg_watts: float, duration_s: float) -> None:
-        rec.end_ts = datetime.utcnow()
+        rec.end_ts = datetime.now(timezone.utc).replace(tzinfo=None)
         rec.energy_kwh = energy_kwh
         rec.cost = cost
         rec.avg_watts = avg_watts
