@@ -23,6 +23,7 @@ from ..utils.config import db_path
 from .components_view import ComponentsView
 from .dashboard import DashboardView
 from .history_view import HistoryView
+from .insights_view import InsightsView
 from .settings_view import SettingsView
 
 
@@ -30,7 +31,7 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setStyleSheet(DARK_QSS)
-        icon_path = __import__("pathlib").Path(__file__).resolve().parents[2] / "resources" / "icon.ico"
+        icon_path = __import__("pathlib").Path(__file__).resolve().parents[3] / "resources" / "icon.ico"
         if icon_path.exists():
             self.setWindowIcon(QIcon(str(icon_path)))
         self.setWindowTitle(t("app_title"))
@@ -80,10 +81,12 @@ class MainWindow(QMainWindow):
         self.components_view = ComponentsView(self)
         self.history_view = HistoryView(self)
         self.settings_view = SettingsView(self)
+        self.insights_view = InsightsView(self)
         tabs.addTab(self.dashboard, t("tab_dashboard"))
         tabs.addTab(self.components_view, t("tab_components"))
         tabs.addTab(self.history_view, t("tab_history"))
         tabs.addTab(self.settings_view, t("tab_settings"))
+        tabs.addTab(self.insights_view, t("tab_insights"))
         self.setCentralWidget(tabs)
 
         self.status = QStatusBar()
@@ -126,9 +129,28 @@ class MainWindow(QMainWindow):
 
         self.components_view.refresh(self.registry)
         self.history_view.refresh(self.repo, self.tracker)
-        self.status.showMessage(
-            t("status_power", w=self._last_power_watts, c=self.repo.total_cost(), cur=self.tariff.currency)
-        )
+        msg = t("status_power", w=self._last_power_watts, c=self.repo.total_cost(), cur=self.tariff.currency)
+        try:
+            thr = float(self.repo.get_setting("threshold", "300") or 300)
+            if self._last_power_watts > thr:
+                msg += "  |  ! " + t("threshold") + f" {thr:.0f}W"
+        except Exception:
+            pass
+        self.status.showMessage(msg)
+
+    def retranslate(self) -> None:
+        self.setWindowTitle(t("app_title"))
+        tabs = self.centralWidget()
+        tabs.setTabText(0, t("tab_dashboard"))
+        tabs.setTabText(1, t("tab_components"))
+        tabs.setTabText(2, t("tab_history"))
+        tabs.setTabText(3, t("tab_settings"))
+        tabs.setTabText(4, t("tab_insights"))
+        self.dashboard.retranslate()
+        self.components_view.retranslate()
+        self.history_view.retranslate()
+        self.settings_view.retranslate()
+        self.status.showMessage(t("status_running"))
 
     def closeEvent(self, event) -> None:  # noqa: N802
         try:

@@ -55,3 +55,7 @@ class SettingsView(QWidget):
         if code:
             set_language(code)
             self.main.repo.set_setting("language", code)
+            self.main.retranslate()
+
+    def retranslate(self) -> None:
+        pass
