@@ -1,169 +1,101 @@
-"""Insights view: forecast, recommendations, alerts, export."""
+"""Insights view (CustomTkinter)."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QMessageBox,
-    QPushButton,
-    QDoubleSpinBox,
-    QTextEdit,
-    QVBoxLayout,
-    QWidget,
-)
+import customtkinter as ctk
 
-from ..core.components import ComponentCategory
-from ..db.repository import Repository
 from ..utils.i18n import t
-import pyqtgraph as pg
 
 
-class InsightsView(QWidget):
+class InsightsView(ctk.CTkFrame):
     def __init__(self, main) -> None:
-        super().__init__()
+        super().__init__(main.content, fg_color="transparent")
         self.main = main
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(3, weight=1)
 
-        # threshold alert
-        row = QHBoxLayout()
-        row.addWidget(QLabel(t("threshold")))
-        self.threshold_spin = QDoubleSpinBox()
-        self.threshold_spin.setRange(0, 100000)
-        self.threshold_spin.setValue(float(self.main.repo.get_setting("threshold", "300") or 300))
-        row.addWidget(self.threshold_spin)
-        save_thr = QPushButton(t("btn_save"))
-        save_thr.clicked.connect(self._save_threshold)
-        row.addWidget(save_thr)
-        row.addStretch()
-        layout.addLayout(row)
+        self.forecast_lbl = ctk.CTkLabel(self, text="", font=ctk.CTkFont(size=13, weight="bold"), text_color="#2563eb")
+        self.forecast_lbl.grid(row=0, column=0, padx=8, pady=8, sticky="w")
+        self.sessions_lbl = ctk.CTkLabel(self, text="", text_color="#8a8f9e")
+        self.sessions_lbl.grid(row=1, column=0, padx=8, pady=4, sticky="w")
 
-        self.forecast_lbl = QLabel("")
-        self.forecast_lbl.setStyleSheet("font-size: 12pt; font-weight: 600; color: #8fb3ff;")
-        layout.addWidget(self.forecast_lbl)
+        self.reco_text = ctk.CTkTextbox(self, height=200)
+        self.reco_text.grid(row=2, column=0, padx=8, pady=8, sticky="nsew")
 
-        self.sessions_lbl = QLabel("")
-        layout.addWidget(self.sessions_lbl)
-
-        self.reco_text = QTextEdit()
-        self.reco_text.setReadOnly(True)
-        layout.addWidget(self.reco_text, stretch=1)
-
-        btn_row = QHBoxLayout()
-        export_btn = QPushButton(t("export_csv"))
-        export_btn.clicked.connect(self._export_csv)
-        btn_row.addWidget(export_btn)
-        refresh_btn = QPushButton(t("btn_refresh"))
-        refresh_btn.clicked.connect(self.refresh)
-        btn_row.addWidget(refresh_btn)
-        btn_row.addStretch()
-        layout.addLayout(btn_row)
-
-        self.chart = pg.PlotWidget()
-        self.chart.setBackground("#11141b")
-        self.chart.setTitle("Session energy (kWh)", color="#8a8f9e", size="10pt")
-        self.chart.setLabel("left", "kWh", color="#8a8f9e")
-        self.chart.setLabel("bottom", "Session", color="#8a8f9e")
-        layout.addWidget(self.chart, stretch=1)
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.grid(row=3, column=0, padx=8, pady=8, sticky="w")
+        ctk.CTkButton(btns, text=t("export_csv"), command=self._export_csv).grid(row=0, column=0, padx=4)
+        ctk.CTkButton(btns, text=t("btn_refresh"), command=self.refresh).grid(row=0, column=1, padx=4)
 
         self.refresh()
 
     def refresh(self) -> None:
+        import psutil
         repo = self.main.repo
         sessions = repo.list_sessions()
         total_kwh = repo.total_kwh()
         total_cost = repo.total_cost()
         n = len(sessions)
-        # average watts
         if sessions:
             avg_w = sum((s.avg_watts or 0) for s in sessions) / len(sessions)
         else:
             avg_w = 0.0
-        # monthly forecast: avg_w * 24 * 30 / 1000 * tariff
         monthly_kwh = avg_w * 24 * 30 / 1000.0
         monthly_cost = monthly_kwh * self.main.tariff.price_per_kwh
-        self.forecast_lbl.setText(t("monthly_forecast") + f": {monthly_cost:.2f} {self.main.tariff.currency} ({monthly_kwh:.1f} kWh)")
-        self.sessions_lbl.setText(t("sessions_count", n=n) + f" | {t('total_kwh', v=total_kwh)} | {t('total_cost', v=total_cost, cur=self.main.tariff.currency)}")
-        # battery
+        self.forecast_lbl.configure(text=t("monthly_forecast") + f": {monthly_cost:.2f} {self.main.tariff.currency} ({monthly_kwh:.1f} kWh)")
+        self.sessions_lbl.configure(text=t("sessions_count", n=n) + f" | {t('total_kwh', v=total_kwh)} | {t('total_cost', v=total_cost, cur=self.main.tariff.currency)}")
+
+        lines = []
         try:
-            batt = __import__("psutil").sensors_battery()
+            batt = psutil.sensors_battery()
             if batt is not None:
-                lines_battery = f"Battery: {batt.percent:.0f}% ({'charging' if batt.power_plugged else 'discharging'})"
+                lines.append(f"Battery: {batt.percent:.0f}% ({'charging' if batt.power_plugged else 'discharging'})")
             else:
-                lines_battery = "Battery: n/a (desktop)"
+                lines.append("Battery: n/a (desktop)")
         except Exception:
-            lines_battery = "Battery: n/a"
-        # top processes
+            lines.append("Battery: n/a")
         try:
-            import psutil
-            procs = sorted(psutil.process_iter(['pid','name','cpu_percent','memory_percent']),
+            procs = sorted(psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']),
                            key=lambda x: x.info.get('cpu_percent') or 0, reverse=True)[:5]
-            top_lines = ["Top processes by CPU:"]
+            lines.append("Top processes by CPU:")
             for pr in procs:
                 info = pr.info
-                top_lines.append(f"  {info.get('name','?')} (PID {info.get('pid')}) - CPU {info.get('cpu_percent',0):.1f}%  RAM {info.get('memory_percent',0):.1f}%")
+                lines.append(f"  {info.get('name', '?')} (PID {info.get('pid')}) - CPU {info.get('cpu_percent', 0):.1f}%  RAM {info.get('memory_percent', 0):.1f}%")
         except Exception:
-            top_lines = ["Top processes: n/a"]
-        # CO2
+            lines.append("Top processes: n/a")
         co2 = total_kwh * 0.4
-        # session energy chart
-        sessions_sorted = list(reversed(sessions))
-        vals = [s.energy_kwh or 0.0 for s in sessions_sorted]
-        self.chart.clear()
-        if vals:
-            bg = pg.BarGraphItem(x=range(len(vals)), height=vals, width=0.6, brushes=["#2563eb" for _ in vals])
-            self.chart.addItem(bg)
-            self.chart.setYRange(0, max(vals + [0.01]) * 1.2)
-
-        # recommendations
-        lines = []
+        lines.append(f"CO2 estimate: {co2:.2f} kg")
+        lines.append("")
         reg = self.main.registry
         for c in reg.components:
-            if c.category == ComponentCategory.CPU and c.current_watts > c.tdp_watts * 0.8:
+            if c.category.value == "cpu" and c.current_watts > c.tdp_watts * 0.8:
                 lines.append("- CPU near TDP: consider better cooling or undervolting.")
-            if c.category == ComponentCategory.GPU and c.current_watts > c.tdp_watts * 0.8:
+            if c.category.value == "gpu" and c.current_watts > c.tdp_watts * 0.8:
                 lines.append("- GPU high load: limit FPS or reduce settings to save power.")
         if avg_w > 200:
             lines.append("- Average power high: enable power-saving plan in OS.")
-        if not lines:
+        if not any(l.startswith("-") for l in lines):
             lines.append("- System running efficiently. No action needed.")
-        # threshold check
         thr = float(self.main.repo.get_setting("threshold", "300") or 300)
         if self.main._last_power_watts > thr:
             lines.insert(0, f"! Current power {self.main._last_power_watts:.0f} W exceeds threshold {thr:.0f} W.")
-        extra = [lines_battery, "", "CO2 estimate: {:.2f} kg".format(co2), ""] + top_lines + [""]
-        self.reco_text.setPlainText("\n".join(extra + lines))
-
-    def _save_threshold(self) -> None:
-        self.main.repo.set_setting("threshold", str(self.threshold_spin.value()))
-        self.chart = pg.PlotWidget()
-        self.chart.setBackground("#11141b")
-        self.chart.setTitle("Session energy (kWh)", color="#8a8f9e", size="10pt")
-        self.chart.setLabel("left", "kWh", color="#8a8f9e")
-        self.chart.setLabel("bottom", "Session", color="#8a8f9e")
-        layout.addWidget(self.chart, stretch=1)
-
-        self.refresh()
+        self.reco_text.delete("1.0", "end")
+        self.reco_text.insert("1.0", "\n".join(lines))
 
     def _export_csv(self) -> None:
-        import os
-        path = os.path.join(str(self.main.repo.get_setting("export_path", "") or ""), "rozetka_history.csv")
-        # simple: save to data dir
+        import csv
         from pathlib import Path
-        out = Path(self.main.repo.get_setting("export_path", "") or ".") / "rozetka_history.csv"
-        # fallback to home
-        if not out.parent.exists():
-            out = Path.home() / "rozetka_history.csv"
+        out = Path.home() / "rozetka_history.csv"
         try:
             with open(out, "w", newline="", encoding="utf-8") as f:
                 w = csv.writer(f)
                 w.writerow(["id", "start", "end", "boot", "kwh", "cost", "avg_watts", "duration_s"])
                 for r in self.main.repo.list_sessions():
                     w.writerow([r.id, r.start_ts, r.end_ts, r.is_boot, r.energy_kwh, r.cost, r.avg_watts, r.duration_s])
-            QMessageBox.information(self, "Export", f"Saved to {out}")
+            import tkinter.messagebox as mb
+            mb.showinfo("Export", f"Saved to {out}")
         except Exception as e:
-            QMessageBox.warning(self, "Export", str(e))
+            import tkinter.messagebox as mb
+            mb.showerror("Export", str(e))
 
     def retranslate(self) -> None:
-        self.threshold_spin.setToolTip(t("threshold"))
+        pass

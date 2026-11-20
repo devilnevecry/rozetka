@@ -1,74 +1,77 @@
-"""Components view: per-component TDP and current power."""
+"""Components view (CustomTkinter)."""
 from __future__ import annotations
 
-from PySide6.QtWidgets import (
-    QDoubleSpinBox,
-    QHBoxLayout,
-    QHeaderView,
-    QLabel,
-    QPushButton,
-    QTableWidget,
-    QTableWidgetItem,
-    QVBoxLayout,
-    QWidget,
-)
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import ttk
 
-from ..core.components import ComponentRegistry
 from ..utils.i18n import t
 
 
-class ComponentsView(QWidget):
+class ComponentsView(ctk.CTkFrame):
     def __init__(self, main) -> None:
-        super().__init__()
+        super().__init__(main.content, fg_color="transparent")
         self.main = main
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels([t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current")])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        layout.addWidget(self.table)
-        btn_row = QHBoxLayout()
-        self.save_btn = QPushButton(t("btn_save_tdp"))
-        self.save_btn.clicked.connect(self._save)
-        btn_row.addWidget(self.save_btn)
-        btn_row.addStretch()
-        layout.addLayout(btn_row)
-        self.tdp_spins: dict = {}
+        self.grid_rowconfigure(2, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
-    def refresh(self, reg: ComponentRegistry) -> None:
-        descs = {
-            'cpu': 'Processor. Adjust TDP to your model.',
-            'gpu': 'Graphics card. Adjust TDP to your model.',
-            'ram': 'System memory.',
-            'disk': 'Storage device.',
-            'motherboard': 'Mainboard and chipset.',
-            'cooling': 'Fans and cooling.',
-            'other': 'Other component.',
-        }
-        self.table.setRowCount(len(reg.components))
-        for i, c in enumerate(reg.components):
-            item = QTableWidgetItem(c.name)
-            item.setToolTip(descs.get(c.category.value, 'Component.'))
-            self.table.setItem(i, 0, item)
-            self.table.setItem(i, 1, QTableWidgetItem(c.category.value))
-            spin = QDoubleSpinBox()
-            spin.setRange(0, 10000)
-            spin.setValue(c.tdp_watts)
-            self.table.setCellWidget(i, 2, spin)
-            self.tdp_spins[c.name] = spin
-            self.table.setItem(i, 3, QTableWidgetItem(f"{c.load*100:.1f}"))
-            self.table.setItem(i, 4, QTableWidgetItem(f"{c.current_watts:.1f}"))
+        # Edit form
+        form = ctk.CTkFrame(self, fg_color="transparent")
+        form.grid(row=0, column=0, padx=8, pady=8, sticky="ew")
+        ctk.CTkLabel(form, text=t("col_name")).grid(row=0, column=0, padx=4)
+        self.comp_combo = ctk.CTkComboBox(form, values=[])
+        self.comp_combo.grid(row=0, column=1, padx=4)
+        ctk.CTkLabel(form, text=t("col_tdp")).grid(row=0, column=2, padx=4)
+        self.tdp_entry = ctk.CTkEntry(form, width=80)
+        self.tdp_entry.grid(row=0, column=3, padx=4)
+        btn = ctk.CTkButton(form, text=t("btn_save_tdp"), command=self._save)
+        btn.grid(row=0, column=4, padx=4)
+
+        self.table = ttk.Treeview(self, columns=("name", "category", "tdp", "load", "current"), show="headings")
+        for col, name in zip(("name", "category", "tdp", "load", "current"),
+                             (t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current"))):
+            self.table.heading(col, text=name)
+        self.table.grid(row=1, column=0, padx=8, pady=8, sticky="nsew")
+        sb = ttk.Scrollbar(self, orient="vertical", command=self.table.yview)
+        self.table.configure(yscrollcommand=sb.set)
+        sb.grid(row=1, column=1, sticky="ns", pady=8)
+
+        # description
+        self.desc = ctk.CTkLabel(self, text="", text_color="#8a8f9e", wraplength=600, justify="left")
+        self.desc.grid(row=2, column=0, padx=8, pady=4, sticky="w")
+        self.table.bind("<<TreeviewSelect>>", self._on_select)
+
+    def refresh(self, reg) -> None:
+        for item in self.table.get_children():
+            self.table.delete(item)
+        names = []
+        for c in reg.components:
+            self.table.insert("", "end", values=(c.name, c.category.value, f"{c.tdp_watts:.1f}", f"{c.load*100:.1f}", f"{c.current_watts:.1f}"))
+            names.append(c.name)
+        self.comp_combo.configure(values=names)
+        if names and not self.comp_combo.get():
+            self.comp_combo.set(names[0])
+
+    def _on_select(self, _event) -> None:
+        sel = self.table.selection()
+        if not sel:
+            return
+        vals = self.table.item(sel[0], "values")
+        self.desc.configure(text=f"{vals[0]}: {vals[1]} | TDP {vals[2]} W | Load {vals[3]}% | Now {vals[4]} W")
 
     def _save(self) -> None:
+        name = self.comp_combo.get()
+        try:
+            tdp = float(self.tdp_entry.get())
+        except ValueError:
+            return
         reg = self.main.registry
         for c in reg.components:
-            spin = self.tdp_spins.get(c.name)
-            if spin is not None:
-                c.tdp_watts = spin.value()
+            if c.name == name:
+                c.tdp_watts = tdp
                 self.main.repo.upsert_component(c.name, c.category.value, c.tdp_watts, c.idle_watts)
         self.refresh(reg)
+        self.tdp_entry.delete(0, "end")
 
     def retranslate(self) -> None:
-        self.table.setHorizontalHeaderLabels([t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current")])
-        self.save_btn.setText(t("btn_save_tdp"))
+        pass

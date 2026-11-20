@@ -5,29 +5,21 @@ import ctypes
 import sys
 from pathlib import Path
 
-from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication
+import customtkinter as ctk
 
 from .ui.main_window import MainWindow
 
 
 def main() -> int:
-    # Windows taskbar icon grouping
     try:
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Rozetka.PowerTracker.1")
     except Exception:
         pass
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
-    app.setApplicationName("Rozetka")
-    icon_path = Path(__file__).resolve().parents[2] / "resources" / "icon.ico"
-    if icon_path.exists():
-        app.setWindowIcon(QIcon(str(icon_path)))
-    window = MainWindow()
-    window.showNormal()
-    window.activateWindow()
-    window.raise_()
-    return app.exec()
+    ctk.set_appearance_mode("dark")
+    ctk.set_default_color_theme("blue")
+    app = MainWindow()
+    app.mainloop()
+    return 0
 
 
 if __name__ == "__main__":
