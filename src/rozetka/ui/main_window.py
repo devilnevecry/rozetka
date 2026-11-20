@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QTabWidget,
 )
 
-from ..core.components import Component, ComponentCategory, ComponentRegistry
+from ..core.components import ComponentRegistry, build_default_registry
 from ..core.monitor import SystemMonitor, SystemSnapshot
 from ..core.power import Tariff, total_power_watts, update_registry_from_snapshot
 from ..core.tracker import SessionTracker
@@ -21,16 +21,6 @@ from .components_view import ComponentsView
 from .dashboard import DashboardView
 from .history_view import HistoryView
 from .settings_view import SettingsView
-
-
-DEFAULT_COMPONENTS = [
-    ("CPU", ComponentCategory.CPU, 65.0, 10.0),
-    ("GPU", ComponentCategory.GPU, 200.0, 20.0),
-    ("RAM", ComponentCategory.RAM, 10.0, 2.0),
-    ("SSD", ComponentCategory.DISK, 5.0, 0.5),
-    ("Motherboard", ComponentCategory.MOTHERBOARD, 30.0, 15.0),
-    ("Cooling", ComponentCategory.COOLING, 15.0, 5.0),
-]
 
 
 class MainWindow(QMainWindow):
@@ -47,14 +37,14 @@ class MainWindow(QMainWindow):
         self.repo = Repository(self.db_session)
 
         # Core
-        self.registry = ComponentRegistry()
-        for name, cat, tdp, idle in DEFAULT_COMPONENTS:
-            self.registry.add(Component(name=name, category=cat, tdp_watts=tdp, idle_watts=idle))
+        self.registry = build_default_registry()
         for cfg in self.repo.list_components():
             for c in self.registry.components:
                 if c.name == cfg.name:
                     c.tdp_watts = cfg.tdp_watts
                     c.idle_watts = cfg.idle_watts
+        for c in self.registry.components:
+            self.repo.upsert_component(c.name, c.category.value, c.tdp_watts, c.idle_watts)
 
         tariff_val = self.repo.get_setting("tariff", "5.0")
         self.tariff = Tariff(price_per_kwh=float(tariff_val) if tariff_val else 5.0)
