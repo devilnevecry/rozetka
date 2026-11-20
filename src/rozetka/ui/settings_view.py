@@ -44,8 +44,6 @@ class SettingsView(ctk.CTkFrame):
         link = ctk.CTkLabel(self, text="GitHub: devilnevecry/rozetka", text_color="#2563eb", cursor="hand2")
         link.grid(row=5, column=0, columnspan=2, padx=8, pady=(20, 2), sticky="w")
         link.bind("<Button-1>", lambda e: __import__("webbrowser").open("https://github.com/devilnevecry/rozetka"))
-        crypto = ctk.CTkLabel(self, text="Crypto wallet (placeholder): 0x0000000000000000000000000000000000000000", text_color="#8a8f9e", font=ctk.CTkFont(size=9))
-        crypto.grid(row=6, column=0, columnspan=2, padx=8, pady=2, sticky="w")
 
     def _save(self) -> None:
         try:
