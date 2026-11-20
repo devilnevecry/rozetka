@@ -13,7 +13,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..core.components import Component, ComponentRegistry
+from ..core.components import ComponentRegistry
+from ..utils.i18n import t
 
 
 class ComponentsView(QWidget):
@@ -22,11 +23,11 @@ class ComponentsView(QWidget):
         self.main = main
         layout = QVBoxLayout(self)
         self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels(["Name", "Category", "TDP (W)", "Load %", "Current (W)"])
+        self.table.setHorizontalHeaderLabels([t("col_name"), t("col_category"), t("col_tdp"), t("col_load"), t("col_current")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.table)
         btn_row = QHBoxLayout()
-        self.save_btn = QPushButton("Save TDP changes")
+        self.save_btn = QPushButton(t("btn_save_tdp"))
         self.save_btn.clicked.connect(self._save)
         btn_row.addWidget(self.save_btn)
         btn_row.addStretch()

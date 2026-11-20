@@ -14,6 +14,9 @@ from ..core.components import ComponentRegistry, build_default_registry
 from ..core.monitor import SystemMonitor, SystemSnapshot
 from ..core.power import Tariff, total_power_watts, update_registry_from_snapshot
 from ..core.tracker import SessionTracker
+from ..utils.i18n import set_language, t
+from ..utils.styles import DARK_QSS
+from PySide6.QtGui import QIcon
 from ..db.models import Base, SessionRecord, make_engine, make_session_factory
 from ..db.repository import Repository
 from ..utils.config import db_path
@@ -26,7 +29,11 @@ from .settings_view import SettingsView
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
-        self.setWindowTitle("Rozetka - PC Power Tracker")
+        self.setStyleSheet(DARK_QSS)
+        icon_path = __import__("pathlib").Path(__file__).resolve().parents[2] / "resources" / "icon.ico"
+        if icon_path.exists():
+            self.setWindowIcon(QIcon(str(icon_path)))
+        self.setWindowTitle(t("app_title"))
         self.resize(1100, 720)
 
         # Database
@@ -51,6 +58,8 @@ class MainWindow(QMainWindow):
         cur = self.repo.get_setting("currency")
         if cur:
             self.tariff.currency = cur
+        lang = self.repo.get_setting("language", "en")
+        set_language(lang or "en")
 
         self.tracker = SessionTracker()
         self.monitor = SystemMonitor(interval=1.0)
@@ -71,15 +80,15 @@ class MainWindow(QMainWindow):
         self.components_view = ComponentsView(self)
         self.history_view = HistoryView(self)
         self.settings_view = SettingsView(self)
-        tabs.addTab(self.dashboard, "Dashboard")
-        tabs.addTab(self.components_view, "Components")
-        tabs.addTab(self.history_view, "History")
-        tabs.addTab(self.settings_view, "Settings")
+        tabs.addTab(self.dashboard, t("tab_dashboard"))
+        tabs.addTab(self.components_view, t("tab_components"))
+        tabs.addTab(self.history_view, t("tab_history"))
+        tabs.addTab(self.settings_view, t("tab_settings"))
         self.setCentralWidget(tabs)
 
         self.status = QStatusBar()
         self.setStatusBar(self.status)
-        self.status.showMessage("Running")
+        self.status.showMessage(t("status_running"))
 
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
@@ -118,7 +127,7 @@ class MainWindow(QMainWindow):
         self.components_view.refresh(self.registry)
         self.history_view.refresh(self.repo, self.tracker)
         self.status.showMessage(
-            f"Power: {self._last_power_watts:.1f} W | Total cost: {self.repo.total_cost():.4f} {self.tariff.currency}"
+            t("status_power", w=self._last_power_watts, c=self.repo.total_cost(), cur=self.tariff.currency)
         )
 
     def closeEvent(self, event) -> None:  # noqa: N802

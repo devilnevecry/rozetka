@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 from ..core.components import ComponentRegistry
 from ..core.monitor import SystemSnapshot
+from ..utils.i18n import t
 
 
 class DashboardView(QWidget):
@@ -28,9 +29,11 @@ class DashboardView(QWidget):
 
         grid = QGridLayout()
         self.labels = {}
-        metrics = ["CPU %", "CPU Temp", "CPU Freq", "RAM %", "RAM Used", "Disk %",
-                   "Disk R", "Disk W", "Net Up", "Net Down", "GPU Load", "GPU Temp",
-                   "Power (W)", "Session Cost"]
+        metric_keys = ["metric_cpu_pct", "metric_cpu_temp", "metric_cpu_freq", "metric_ram_pct",
+                      "metric_ram_used", "metric_disk_pct", "metric_disk_r", "metric_disk_w",
+                      "metric_net_up", "metric_net_down", "metric_gpu_load", "metric_gpu_temp",
+                      "metric_power", "metric_session_cost"]
+        metrics = [t(k) for k in metric_keys]
         row = 0
         col = 0
         for m in metrics:
@@ -54,7 +57,7 @@ class DashboardView(QWidget):
         # chart
         self.plot = pg.PlotWidget()
         self.plot.setBackground("w")
-        self.plot.setTitle("Power (W) over time")
+        self.plot.setTitle(t("chart_power"))
         self.plot.setLabel("left", "Watts")
         self.plot.setLabel("bottom", "Samples")
         self.curve = self.plot.plot(pen=pg.mkPen("b", width=2))
@@ -87,6 +90,6 @@ class DashboardView(QWidget):
                 self.labels["Session Cost"].setText(f"{cost:.4f}")
         except Exception:
             pass
-        self.power_label.setText(f"Power: {power_w:.1f} W  |  Total TDP: {reg.total_tdp():.0f} W")
+        self.power_label.setText(t("power_label", w=power_w, tdp=reg.total_tdp()))
         self._power_history.append(power_w)
         self.curve.setData(list(self._power_history))
