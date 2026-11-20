@@ -37,6 +37,14 @@ python -m pytest -q
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Build .exe
+
+```powershell
+.\scripts\build.ps1
+```
+
+Produces `dist/Rozetka/Rozetka.exe`.
+
 ## License
 
 MIT
