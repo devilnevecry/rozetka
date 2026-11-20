@@ -18,7 +18,7 @@ from ..core.power import Tariff, total_power_watts, update_registry_from_snapsho
 from ..core.tracker import SessionTracker
 from ..utils.i18n import set_language, t
 from ..utils.styles import DARK_QSS
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction, QIcon, QKeySequence, QShortcut
 from ..db.models import Base, SessionRecord, make_engine, make_session_factory
 from ..db.repository import Repository
 from ..utils.config import db_path
@@ -88,6 +88,9 @@ class MainWindow(QMainWindow):
         tabs.addTab(self.settings_view, "⚙️  " + t("tab_settings"))
         tabs.addTab(self.insights_view, "💡  " + t("tab_insights"))
         self.setCentralWidget(tabs)
+        for i in range(5):
+            sc = QShortcut(QKeySequence(f"Ctrl+{i+1}"), self)
+            sc.activated.connect(lambda idx=i: tabs.setCurrentIndex(idx))
 
         self.status = QStatusBar()
         self.setStatusBar(self.status)

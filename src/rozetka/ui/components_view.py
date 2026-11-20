@@ -37,9 +37,20 @@ class ComponentsView(QWidget):
         self.tdp_spins: dict = {}
 
     def refresh(self, reg: ComponentRegistry) -> None:
+        descs = {
+            'cpu': 'Processor. Adjust TDP to your model.',
+            'gpu': 'Graphics card. Adjust TDP to your model.',
+            'ram': 'System memory.',
+            'disk': 'Storage device.',
+            'motherboard': 'Mainboard and chipset.',
+            'cooling': 'Fans and cooling.',
+            'other': 'Other component.',
+        }
         self.table.setRowCount(len(reg.components))
         for i, c in enumerate(reg.components):
-            self.table.setItem(i, 0, QTableWidgetItem(c.name))
+            item = QTableWidgetItem(c.name)
+            item.setToolTip(descs.get(c.category.value, 'Component.'))
+            self.table.setItem(i, 0, item)
             self.table.setItem(i, 1, QTableWidgetItem(c.category.value))
             spin = QDoubleSpinBox()
             spin.setRange(0, 10000)
